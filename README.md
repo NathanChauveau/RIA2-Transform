@@ -14,6 +14,8 @@ Il doit aussi pouvoir réaliser le job sans qu'il soit bloqué avec une méthode
 - Télécharger un/plusieurs fichiers contenant des datas d'un bucket*
 - Nettoyer les datas reçu (-> need more detail ?)*
 - Déposer le fichier final contenant les datas transformé dans un bucket*
+- Permettre de personnaliser la transformation des données
+
 
 Fournisseur :
 Amazon Web Services (AWS)

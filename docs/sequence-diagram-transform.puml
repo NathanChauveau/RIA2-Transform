@@ -1,0 +1,71 @@
+@startuml
+title GET /api/transform/objects (Async, REST, DI)
+
+actor ApiOrchestre
+participant Router
+participant Controller
+participant BucketService
+participant BucketAdapterFactory
+participant "AWSBucketAdapterImpl" as AWSAdapter
+participant "AWSClient\n(AWS SDK)" as AWSClient
+participant TransformObjects
+participant CleanDatas
+participant FilterDatas
+== 1. Download objets ==
+== 1.1 HTTP Request ==
+ApiOrchestre -> Router: 1. GET /api/transform/objects
+Router -> Controller: 2. route(request)
+
+== 1.2 Controller ==
+Controller ->> BucketService: 3. downloadAsync()
+
+== 1.3 Service ==
+BucketService -> BucketAdapterFactory: 4. getBucketAdapter()
+BucketAdapterFactory --> BucketService: AWSBucketAdapterImpl
+
+BucketService ->> AWSAdapter: 4. downloadAsync(remote)
+
+== 1.4 Dependency Injection ==
+note over AWSAdapter
+AWSClient is injected
+(via constructor or setter),
+not instantiated directly
+end note
+
+AWSAdapter -> AWSClient: (injected dependency)
+
+== 1.5 Async SDK Call ==
+AWSAdapter ->> AWSClient: 5. downloadAsync(bucket)
+AWSClient -->> AWSAdapter: AWSObjects<objectNames[]>
+
+AWSAdapter -->> BucketService: objectNames[]
+BucketService -->> Controller: objectNames[]
+== 2. Transform Objects ==
+Controller -> TransformObjects: transformAsync(objectNames[])
+TransformObjects -> CleanDatas: cleanAsync(objectNames[])
+CleanDatas -->> TransformObjects: objectNames[]
+TransformObjects -> FilterDatas: filterAsync(objectNames[])
+FilterDatas -->> TransformObjects: objectNames[]
+note over TransformObjects
+redo for each transformation step
+end note
+TransformObjects -->> Controller: objectNames[]
+
+
+== 3. Send Objects ==
+Controller ->> BucketService: sendAsync(objectNames[])
+BucketService -> BucketAdapterFactory: getBucketAdapter()
+BucketAdapterFactory --> BucketService: AWSBucketAdapterImpl
+
+BucketService ->> AWSAdapter: sendAsync(remote, objectNames[])
+
+AWSAdapter -> AWSClient: (injected dependency)
+
+AWSAdapter ->> AWSClient: sendAsync(bucket, objectNames[])
+AWSClient -->> AWSAdapter: void
+
+AWSAdapter -->> BucketService: void
+BucketService -->> Controller: void
+== REST Response ==
+Controller -->> ApiOrchestre: HTTP 200 OK\n void
+@enduml

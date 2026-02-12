@@ -1,0 +1,80 @@
+@startuml
+title ETL Transform
+
+package "Bucket" {
+    class BucketService {
+        + download(...)
+        + upload(...)
+    }
+
+    class BucketAdapterFactory {
+        + getBucketAdapter(): IBucketAdapter
+    }
+
+    interface IBucketAdapter {
+        + upload(string: remote, object: byte[]): void
+        + download(string: remote): byte[] 
+    }
+
+    class GCPBucketAdapterImpl
+    class AWSBucketAdapterImpl {
+        - awsClient: IAWSClient
+        + AWSBucketAdapterImpl(client: IAWSClient)
+    }
+    ' ---- Test ----
+    class TestAWSBucketAdapterImpl {
+        - mockAWSClient: IAWSClient
+    }
+}
+
+package "Transform" {
+    class TransformData {
+        - step : List<TransformStep>
+        + execute(data: byte[]): byte[]
+        + addStep(step: TransformStep)
+    }
+
+    abstract class TransformStep {
+        + transform(data: byte[]): byte[]
+    }
+
+    class CleanDatas extends TransformStep {
+        + transform(data: byte[]): byte[]
+    }
+    class FilterDatas extends TransformStep {
+        + transform(data: byte[]): byte[]
+    }
+
+}
+
+
+' ---- SDK ----
+package AWSSDK {
+    interface IAWSClient
+    class AWSClient
+}
+
+package GCPSDK {}
+
+' ---- Relationships ----
+BucketService --> BucketAdapterFactory
+BucketAdapterFactory --> IBucketAdapter
+
+TransformData *-- TransformStep
+
+IBucketAdapter <|.. AWSBucketAdapterImpl
+IBucketAdapter <|.. GCPBucketAdapterImpl
+
+' Dependency Injection instead of instantiation
+AWSBucketAdapterImpl --> IAWSClient : uses
+AWSClient ..|> IAWSClient
+
+AWSBucketAdapterImpl ..> AWSSDK
+GCPBucketAdapterImpl ..> GCPSDK
+
+
+
+TestAWSBucketAdapterImpl --> AWSBucketAdapterImpl : injects
+TestAWSBucketAdapterImpl --> IAWSClient : creates mock
+
+@enduml

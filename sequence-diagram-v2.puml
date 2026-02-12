@@ -1,0 +1,57 @@
+@startuml
+title GET /api/transform/objects (Async, REST, DI)
+
+actor ApiOrchestre
+participant Router
+participant Controller
+participant BucketService
+participant BucketAdapterFactory
+participant "AWSBucketAdapterImpl" as AWSAdapter
+participant "AWSClient\n(AWS SDK)" as AWSClient
+participant TransformData
+
+== 1. HTTP Request ==
+ApiOrchestre -> Router: 1. GET /api/download/objects
+Router -> Controller: 2. route(request)
+
+== 3. Controller ==
+Controller ->> BucketService: 3. downloadAsync()
+
+== 4. Service ==
+BucketService -> BucketAdapterFactory: 4. getBucketAdapter()
+BucketAdapterFactory --> BucketService: AWSBucketAdapterImpl
+
+BucketService ->> AWSAdapter: 4. downloadAsync(remote)
+
+== 4.1 Dependency Injection ==
+note over AWSAdapter
+AWSClient is injected
+(via constructor or setter),
+not instantiated directly
+end note
+
+AWSAdapter -> AWSClient: (injected dependency)
+
+== 5. Async SDK Call ==
+AWSAdapter ->> AWSClient: 5. downloadAsync(bucket)
+AWSClient -->> AWSAdapter: AWSObjects<objectNames[]>
+
+AWSAdapter -->> BucketService: objectNames[]
+BucketService -->> Controller: objectNames[]
+== REST Response ==
+Controller -->> ApiOrchestre: HTTP 200 OK\n[objectNames[]]
+
+== 6. HTTP Request ==
+
+ApiOrchestre -> Router: 1. GET /api/transform/objects
+Router -> Controller: 2. route(request)
+== 7. Transform datas ==
+Controller -> TransformData: 6. transform(objectNames[])
+
+
+
+TransformData -->> Controller: objectNames[]
+== REST Response ==
+Controller -->> ApiOrchestre: HTTP 200 OK\n[objectNames[]]
+
+@enduml

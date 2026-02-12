@@ -64,6 +64,7 @@ Pour un test uniquement :
 - Nom des buckets déjà su par le conteneur ? (prédéfinis ou non)
 - Séparer les différents mannière de transformer en plusieurs méthodes ?
 - Est-ce que l'orchestrateur n'execute qu'une seule methéode par passage ou chaque étape du "Transform" ?
+- Type de fichier est déjà connu/prédéfini ?
 
 ## Collaboration
 
